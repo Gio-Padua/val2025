@@ -57,12 +57,14 @@ export default function ValentinesProposal({ onAccept }: ValentinesProposalProps
 
   return (
     <div className="flex flex-col items-center justify-center space-y-8">
+        {typeof window !== 'undefined' && (
       <Player
         autoplay
         loop
         src="/enve.json"
         style={{ height: "300px", width: "300px" }}
       />
+        )}
       <h1 className="text-3xl font-bold text-rose-900">Will you be my Valentine Wab?</h1>
       <div ref={buttonsContainerRef} className="relative w-80 h-24 flex justify-center items-center">
         <button

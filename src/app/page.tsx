@@ -11,7 +11,10 @@ export default function Home() {
     <main className="relative flex min-h-screen flex-col items-center justify-center p-24 bg-pink-100 overflow-hidden">
       {accepted ? (
         <>
+        
           {/* Background Flower Animations */}
+          {typeof window !== 'undefined' && (
+            <>
           <Player
             autoplay
             loop
@@ -72,6 +75,7 @@ export default function Home() {
             src="/flowerExp.json"
             className="absolute bottom-10 left-2/3 w-36 h-36 opacity-80"
           />
+          </>)}
           {/* Celebration Animation & Text */}
           <div className="text-4xl font-bold text-rose-900 text-center">
             <Player
@@ -82,7 +86,9 @@ export default function Home() {
             />
             <h1>Yay! See you! Happy Valentine&apos;s Day! </h1>
           </div>
+       
         </>
+        
       ) : (
         <ValentinesProposal onAccept={() => setAccepted(true)} />
       )}
