@@ -80,7 +80,7 @@ export default function Home() {
               src="/explode.json"
               style={{ height: "300px", width: "300px" }}
             />
-            <h1>Yay! See you! Happy Valentine's Day! </h1>
+            <h1>Yay! See you! Happy Valentine&apos;s Day! </h1>
           </div>
         </>
       ) : (
