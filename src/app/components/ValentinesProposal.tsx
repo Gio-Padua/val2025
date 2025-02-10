@@ -23,10 +23,10 @@ export default function ValentinesProposal({ onAccept }: ValentinesProposalProps
       const yesRect = yesButtonRef.current.getBoundingClientRect();
       const noRect = noButtonRef.current.getBoundingClientRect();
 
-      // Initial positioning of the "No" button
+      // Initial positioning of "No" button inline with "Yes" button but with random horizontal offset
       setNoButtonPosition({
-        x: Math.random() * (containerRect.width - noRect.width),
-        y: Math.random() * (containerRect.height - noRect.height),
+        x: yesRect.left - containerRect.left + yesRect.width + Math.random() * 30 + 20, // Randomly 20-50px to the right
+        y: yesRect.top - containerRect.top, // Keep inline with Yes button
       });
     }
   }, []);
