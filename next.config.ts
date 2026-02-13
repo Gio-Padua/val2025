@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    output: 'export', // Enables static export
-  
-  
+  // Static export removed to enable 'next start'
 };
 
 export default nextConfig;

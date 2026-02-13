@@ -3,112 +3,188 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// Prevent SSR issues with Lottie animation component
 const Enve = dynamic(() => import("./Enve"), { ssr: false });
 
 interface ValentinesProposalProps {
   onAccept: () => void;
 }
 
+const rejectionPhrases = [
+  "No",
+  "Are you sure?",
+  "Think again!",
+  "Give it a chance!",
+  "Pretty please?",
+  "Don't break my heart",
+  "I'll keep asking!",
+  "You know you want to!",
+  "Last chance!",
+  "Say yes!",
+];
+
+const encouragingMessages = [
+  "I promise to make you smile every day!",
+  "We could have amazing adventures together!",
+  "You're the missing piece to my puzzle!",
+  "My heart beats only for you!",
+  "Together we'd be unstoppable!",
+  "You're my favorite notification!",
+];
+
 export default function ValentinesProposal({ onAccept }: ValentinesProposalProps) {
   const [noCount, setNoCount] = useState(0);
-  const [noButtonPosition, setNoButtonPosition] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
+  const [noButtonPosition, setNoButtonPosition] = useState<{ x: number | null; y: number }>({ x: null, y: 0 });
+  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [encouragementIndex, setEncouragementIndex] = useState(0);
+  const [yesScale, setYesScale] = useState(1);
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const yesButtonRef = useRef<HTMLButtonElement>(null);
   const noButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && buttonsContainerRef.current && yesButtonRef.current && noButtonRef.current) {
+    if (typeof window !== "undefined" && buttonsContainerRef.current && yesButtonRef.current) {
       const containerRect = buttonsContainerRef.current.getBoundingClientRect();
       const yesRect = yesButtonRef.current.getBoundingClientRect();
-      const noRect = noButtonRef.current.getBoundingClientRect();
 
-      // Initial positioning of "No" button inline with "Yes" button but with random horizontal offset
       setNoButtonPosition({
-        x: yesRect.left - containerRect.left + yesRect.width + Math.random() * 30 + 20, // Randomly 20-50px to the right
-        y: yesRect.top - containerRect.top, // Keep inline with Yes button
+        x: yesRect.left - containerRect.left + yesRect.width + 40,
+        y: yesRect.top - containerRect.top,
       });
     }
   }, []);
 
-  const updateNoButtonPosition = useCallback(() => {
+  useEffect(() => {
+    const newScale = 1 + noCount * 0.15;
+    setYesScale(Math.min(newScale, 2));
+  }, [noCount]);
+
+  const getRandomPosition = useCallback(() => {
     if (buttonsContainerRef.current && yesButtonRef.current && noButtonRef.current) {
       const containerRect = buttonsContainerRef.current.getBoundingClientRect();
       const yesRect = yesButtonRef.current.getBoundingClientRect();
       const noRect = noButtonRef.current.getBoundingClientRect();
 
+      const containerPadding = 20;
+      const availableWidth = containerRect.width - noRect.width - containerPadding * 2;
+      const availableHeight = containerRect.height - noRect.height - containerPadding * 2;
+
       let newX: number;
       let newY: number;
       let attempts = 0;
-      const maxAttempts = 20;
-      const minDistance = 50; // Ensures button moves away significantly
+      const maxAttempts = 30;
+      const minDistanceFromYes = 100;
 
       do {
-        // Move the button a minimum distance away
-        const angle = Math.random() * Math.PI * 2; // Random angle for movement
-        const distance = Math.random() * (150 - minDistance) + minDistance; // 50px min, 150px max move
+        newX = Math.random() * availableWidth + containerPadding;
+        newY = Math.random() * availableHeight + containerPadding;
 
-        newX = noButtonPosition.x! + Math.cos(angle) * distance;
-        newY = noButtonPosition.y! + Math.sin(angle) * distance;
+        const yesCenterX = yesRect.left - containerRect.left + yesRect.width / 2;
+        const yesCenterY = yesRect.top - containerRect.top + yesRect.height / 2;
+        const noCenterX = newX + noRect.width / 2;
+        const noCenterY = newY + noRect.height / 2;
 
-        // Keep button within bounds
-        newX = Math.max(10, Math.min(containerRect.width - noRect.width - 10, newX));
-        newY = Math.max(10, Math.min(containerRect.height - noRect.height - 10, newY));
+        const distance = Math.sqrt(
+          Math.pow(yesCenterX - noCenterX, 2) + Math.pow(yesCenterY - noCenterY, 2)
+        );
+
+        if (distance >= minDistanceFromYes || attempts > maxAttempts - 5) {
+          break;
+        }
 
         attempts++;
-      } while (
-        attempts < maxAttempts &&
-        newX + noRect.width > yesRect.left - containerRect.left &&
-        newX < yesRect.right - containerRect.left &&
-        newY + noRect.height > yesRect.top - containerRect.top &&
-        newY < yesRect.bottom - containerRect.top
-      );
+      } while (attempts < maxAttempts);
 
       setNoButtonPosition({ x: newX, y: newY });
     }
-  }, [noButtonPosition]);
+  }, []);
 
-  const handleNoHover = useCallback(() => {
-    updateNoButtonPosition();
-  }, [updateNoButtonPosition]);
-
-  const handleNoClick = useCallback(() => {
-    setNoCount((prev) => prev + 1);
-    updateNoButtonPosition();
-  }, [updateNoButtonPosition]);
+  const handleNoInteraction = useCallback(() => {
+    setNoCount((prev) => {
+      const newCount = prev + 1;
+      
+      if (newCount % 2 === 0 && newCount < encouragingMessages.length * 2) {
+        setEncouragementIndex(Math.floor(newCount / 2) % encouragingMessages.length);
+        setShowEncouragement(true);
+        setTimeout(() => setShowEncouragement(false), 3000);
+      }
+      
+      return newCount;
+    });
+    
+    getRandomPosition();
+  }, [getRandomPosition]);
 
   const getNoButtonText = () => {
-    const phrases = ["No", "Are you sure?", "Sure???", "Really?", "Think again!", "Sigurado ka?", "Last chance!"];
-    return phrases[Math.min(noCount, phrases.length - 1)];
+    if (noCount < rejectionPhrases.length) {
+      return rejectionPhrases[noCount];
+    }
+    return rejectionPhrases[rejectionPhrases.length - 1];
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-8">
-      <Enve />
-      <h1 className="text-3xl font-bold text-rose-900">Will you be my Valentine Wab?</h1>
-      <div ref={buttonsContainerRef} className="relative w-80 h-24 flex justify-center items-center">
+    <div className="flex flex-col items-center justify-center space-y-8 animate-fade-in-up">
+      <div className="relative">
+        <Enve />
+      </div>
+      
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gradient animate-heart-beat">
+          Will you be my Valentine?
+        </h1>
+        <p className="text-lg md:text-xl text-rose-700/80 font-medium">
+          My heart is racing just asking...
+        </p>
+      </div>
+
+      {showEncouragement && (
+        <div className="glass-card px-6 py-3 rounded-full animate-bounce-in">
+          <p className="text-rose-700 font-semibold text-center">
+            {encouragingMessages[encouragementIndex]}
+          </p>
+        </div>
+      )}
+
+      <div 
+        ref={buttonsContainerRef} 
+        className="relative w-96 h-40 flex justify-center items-center"
+      >
         <button
           ref={yesButtonRef}
-          className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-700 transition-colors mr-2"
+          className="btn-yes px-8 py-4 text-white rounded-full font-bold text-lg animate-pulse-glow z-10"
+          style={{
+            transform: `scale(${yesScale})`,
+            transition: 'transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          }}
           onClick={onAccept}
         >
-          Yes
+          Yes! 💝
         </button>
-        <button
-          ref={noButtonRef}
-          className="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600 transition-colors"
-          style={{
-            position: noButtonPosition.x !== null ? "absolute" : "static",
-            left: noButtonPosition.x !== null ? `${noButtonPosition.x}px` : "auto",
-            top: noButtonPosition.y !== null ? `${noButtonPosition.y}px` : "auto",
-            transition: "left 0.3s ease-out, top 0.3s ease-out",
-          }}
-          onClick={handleNoClick}
-          onMouseEnter={handleNoHover}
-        >
-          {getNoButtonText()}
-        </button>
+
+        {noButtonPosition.x !== null && (
+          <button
+            ref={noButtonRef}
+            className="btn-no px-6 py-3 text-white rounded-full font-semibold text-base"
+            style={{
+              position: 'absolute',
+              left: `${noButtonPosition.x}px`,
+              top: `${noButtonPosition.y}px`,
+              transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+              zIndex: 20,
+            }}
+            onClick={handleNoInteraction}
+            onMouseEnter={handleNoInteraction}
+            onTouchStart={handleNoInteraction}
+          >
+            {getNoButtonText()}
+          </button>
+        )}
       </div>
+
+      {noCount > 0 && (
+        <p className="text-sm text-rose-500/60 italic">
+          You've said no {noCount} time{noCount !== 1 ? 's' : ''}... but I'm persistent! 💪
+        </p>
+      )}
     </div>
   );
 }
